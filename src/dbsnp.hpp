@@ -1,0 +1,19 @@
+//
+//  dbsnp.hpp
+//  rsidImpu
+//  Created by Lulu Shi on 24/11/2025.
+//  Copyright © 2025 Lulu Shi. All rights reserved.
+//
+
+
+#ifndef RSIDIMPU_DBSNP_HPP
+#define RSIDIMPU_DBSNP_HPP
+
+#include <unordered_map>
+#include <string>
+#include "args.hpp"
+
+std::unordered_map<std::string,std::string>
+load_dbsnp(const Params& P);
+
+#endif
