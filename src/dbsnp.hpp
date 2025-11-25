@@ -13,7 +13,11 @@
 #include <string>
 #include "args.hpp"
 
-std::unordered_map<std::string,std::string>
-load_dbsnp(const Params& P);
+// std::unordered_map<std::string,std::string>
+using DBMap = std::unordered_map<
+    std::string,
+    std::unordered_map<std::string, std::string>
+>;
+DBMap load_dbsnp(const Params& P);
 
 #endif

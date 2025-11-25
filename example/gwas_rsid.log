@@ -1,0 +1,8 @@
+[INFO] Analysis started: Tue Nov 25 19:43:03 2025
+[INFO] Loaded dbSNP entries: 3 chromosomes.
+[INFO] Using threads = 4
+[INFO] Loaded GWAS lines (data): 8
+[INFO] Basic QC done: 8 passed, 0 removed.
+[INFO] Duplicate SNPs removal done. Removed = 0
+[INFO] Analysis finished: Tue Nov 25 19:43:03 2025
+[INFO] Computational time: 00:00:00

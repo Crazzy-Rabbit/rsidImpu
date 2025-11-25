@@ -1,5 +1,6 @@
 //
-//  rsidImpu.cpp
+//  args.cpp
+//  rsidImpu
 //
 //  Created by Lulu Shi on 24/11/2025.
 //  Copyright © 2025 Lulu Shi. All rights reserved.
@@ -7,6 +8,7 @@
 
 
 #include "args.hpp"
+#include "log.hpp"
 #include <iostream>
 #include <cstdlib>
 #include <set>
@@ -33,6 +35,7 @@ void print_help(){
     << "  --dbA1             COL      Allele1 (REF) column in dbSNP\n"
     << "  --dbA2             COL      Allele2 (ALT) column in dbSNP\n"
     << "  --dbrsid           COL      RSID column in dbSNP\n\n"
+
     << "------------------------------------------------------------------\n"
     << "Additional optional parameters (output format):\n"
     << "  --format           STR      Output format (default: gwas)\n"
@@ -43,19 +46,34 @@ void print_help(){
     << "  --beta             COL      Beta/Effect column              (default: beta)\n"
     << "  --se               COL      Standard error column           (default: se)\n"
     << "  --n                COL      Sample size column              (default: N)\n\n"
-    << "------------------------------------------------------------------\n"
+
     << "Quality Control (QC) options:\n"
     << "  --remove-dup-snp            Remove duplicate SNPs (keep lowest P)\n"
     << "  --maf              VAL      MAF threshold, default = 0.01\n\n"
-    << "------------------------------------------------------------------\n"
+
+    << "Multi-threading:\n"
+    << "  --threads          INT      Number of threads to use (default: 1)\n\n"
+    << "Logging:\n"
+    << "  --log              FILE     Write log messages to FILE\n\n"
+
     << "Example:\n"
     << "  rsidImpu \\\n"
     << "    --gwas-summary gwas.txt --dbsnp dbsnp.txt --out out.txt \\\n"
     << "    --chr CHR --pos POS --A1 A1 --A2 A2 --pval P \\\n"
     << "    --dbchr CHR --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID \\\n"
-    << "    --remove-dup-snp --maf 0.01 --format smr --freq Freq --beta Beta --se SE --n N\n\n"
+    << "    --remove-dup-snp --maf 0.01 --format smr --freq Freq --beta Beta --se SE --n N\n"
     << "******************************************************************\n";
 }
+
+// ★ 所有合法的参数名（包括 flag 和带值项）
+set<string> valid_params = {
+    "--gwas-summary", "--dbsnp", "--out",
+    "--chr", "--pos", "--A1", "--A2", "--pval",
+    "--dbchr", "--dbpos", "--dbA1", "--dbA2", "--dbrsid",
+    "--format", "--freq", "--beta", "--se", "--n",
+    "--threads", "--maf", "--log",
+    "--remove-dup-snp"
+};
 
 Params parse_args(int argc, char* argv[]) {
     map<string,string> args;
@@ -82,14 +100,22 @@ Params parse_args(int argc, char* argv[]) {
     while (i < argc){
         string key = argv[i];
 
+        // 检查参数
+        if (!valid_params.count(key)) {
+            LOG_ERROR("Unknown parameter: " + key);
+            exit(1);
+        }
+
+        // ★ flag 型参数（如 --remove-dup-snp）
         if (flag_params.count(key)){
             args[key] = "1";
             i += 1;
             continue;
         }
 
+        // ★ 普通参数必须有值
         if (i+1 >= argc) {
-            cerr << "Error: missing value for " << key << "\n";
+            LOG_ERROR("Error: missing value for " + key);
             exit(1);
         }
 
@@ -99,7 +125,7 @@ Params parse_args(int argc, char* argv[]) {
     }
 
     if (!args.count("--gwas-summary") || !args.count("--dbsnp") || !args.count("--out")){
-        cerr << "Error: required arguments missing. \n";
+        LOG_ERROR("Error: required arguments missing.");
         print_help();
         exit(1);
     }
@@ -120,7 +146,14 @@ Params parse_args(int argc, char* argv[]) {
     // ---------- QC options ----------
     P.remove_dup_snp = args.count("--remove-dup-snp");
     P.maf_threshold  = args.count("--maf") ? stod(args["--maf"]) : 0.01;
-    
+
+    // ---------- Threads ----------
+    P.threads = args.count("--threads") ? stoi(args["--threads"]) : 1;
+
+    // log 
+    P.log_enabled = args.count("--log");
+    P.log_file    = args.count("--log") ? args["--log"] : "";
+
     // ----------------- output format columns -----------------
     P.format   = args.count("--format") ? args["--format"] : "gwas";
     P.col_freq = args.count("--freq")   ? args["--freq"]   : "freq";
@@ -131,7 +164,7 @@ Params parse_args(int argc, char* argv[]) {
     vector<string> required = {"--dbchr","--dbpos","--dbA1","--dbA2","--dbrsid"};
     for (auto &k : required) {
         if (!args.count(k)){
-            cerr << "Error: missing dnSNP column " << k << endl;
+            LOG_ERROR("Error: missing dnSNP column " + k);
             exit(1);
         }
     }

@@ -9,6 +9,7 @@
 #define RSIDIMPU_GWASQC_HPP
 
 #include <string>
+#include <deque>
 #include <vector>
 #include "util.hpp"
 
@@ -17,7 +18,7 @@
 // - p must be in [0,1]
 
 void gwas_basic_qc(
-    std::vector<std::string> &lines,
+    std::deque<std::string> &lines,
     const std::vector<std::string> &header,
     int idx_beta,
     int idx_se,
@@ -29,7 +30,7 @@ void gwas_basic_qc(
 );
 
 void gwas_remove_dup(
-    std::vector<std::string> &lines,
+    std::deque<std::string> &lines,
     const std::vector<std::string> &header,
     int idx_p,                            // gP
     std::vector<std::string> &rsid_vec,

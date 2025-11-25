@@ -39,6 +39,20 @@ string upper(const string &s){
     return t;
 }
 
+string norm_chr(const string &chr){
+    string c = trim(chr);
+
+    // 去掉 "chr" 前缀 (Chr / CHR / chr)
+    if (c.size() >= 3) {
+        string prefix = c.substr(0, 3);
+        transform(prefix.begin(), prefix.end(), prefix.begin(), ::tolower);
+        if (prefix == "chr"){
+            return c.substr(3);
+        }
+    }
+    return c;
+}
+
 // 后缀检查
 bool ends_with(const string &s, const string &suffix){
     if (s.size() < suffix.size()) return false;

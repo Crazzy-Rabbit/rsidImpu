@@ -9,19 +9,21 @@
 #include "linereader.hpp"
 #include "allele.hpp"
 #include "util.hpp"
+#include "log.hpp"
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 
-unordered_map<string,string> load_dbsnp(const Params& P){
-    unordered_map<string,string> mapdb;
-    mapdb.reserve(50000000);
+DBMap load_dbsnp(const Params& P) {
+    DBMap mapdb;   // chr → (key → rsid)
 
     LineReader reader(P.dbsnp_file);
     string line;
-    bool is_bim = ends_with(P.dbsnp_file, ".bim") ||
-                    ends_with(P.dbsnp_file, ".bim.gz");
-    
+
+    bool is_bim = ends_with(P.dbsnp_file,".bim") ||
+                    ends_with(P.dbsnp_file,".bim.gz");
+
     int dCHR, dPOS, dA1, dA2, dRS;
 
     if (!is_bim){
@@ -34,21 +36,31 @@ unordered_map<string,string> load_dbsnp(const Params& P){
         dRS  = find_col(hdr, P.d_rsid);
 
         if (dCHR<0||dPOS<0||dA1<0||dA2<0||dRS<0){
-            cerr << "dbSNP header incomplete.\n"; exit(1);
+            LOG_ERROR("dbSNP header incomplete.");
+            exit(1);
         }
     } else {
         dCHR=0; dRS=1; dPOS=3; dA1=4; dA2=5;
     }
 
-    while (reader.getline(line)){
+    while (reader.getline(line)) {
         if (line.empty()) continue;
+
         auto f = split(line);
-        string key = make_key(f[dCHR], f[dPOS], f[dA1], f[dA2]);
-        if (!mapdb.count(key)){
-            mapdb[key] = f[dRS];
-        }
+
+        string chr = norm_chr(f[dCHR]);
+        string pos = f[dPOS];
+        string a1  = f[dA1];
+        string a2  = f[dA2];
+        string rs  = f[dRS];
+
+        // 用精简的 key: pos + alleles
+        auto canon = canonical_alleles(a1,a2);
+        string key = pos + ":" + canon.first + ":" + canon.second;
+
+        mapdb[chr][key] = rs;
     }
 
-    cerr << "dbSNP entries loaded: " << mapdb.size() << endl;
+    LOG_INFO("Loaded dbSNP entries: " + std::to_string(mapdb.size()) + " chromosomes.");
     return mapdb;
 }

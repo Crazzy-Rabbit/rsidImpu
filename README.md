@@ -28,8 +28,11 @@ The tool supports **QC filtering, SMR-formatted output, gzip input/output**, and
 - Efficient gzipped input/output
 - Hash-based dbSNP lookup
 - Capable of processing:
-  - **15GB+ dbSNP files**
-  - **Millions of GWAS variants**
+  - **15–30 GB dbSNP reference files**
+  - **Millions to tens of millions of GWAS variants**
+
+### ✔ Safe for parallel execution
+All components—logging, hashing, QC, matching—are thread-safe and deterministic under OpenMP.
 
 ### ✔ Clean & Flexible Output
 

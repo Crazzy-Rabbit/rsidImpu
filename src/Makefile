@@ -20,7 +20,8 @@ SRC = \
 	gwas.cpp \
 	gwasQC.cpp \
 	allele.cpp \
-	writer.cpp
+	writer.cpp \
+	log.cpp
 
 # Convert .cpp → .o
 OBJ = $(SRC:.cpp=.o)

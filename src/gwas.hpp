@@ -11,9 +11,10 @@
 #include <unordered_map>
 #include <string>
 #include "args.hpp"
+#include "dbsnp.hpp"
 
 void process_gwas(const Params& P,
-                const std::unordered_map<std::string,std::string>& mapdb);
+                const DBMap& mapdb);
 
 #endif
 

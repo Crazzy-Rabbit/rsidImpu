@@ -11,9 +11,13 @@
 #include "util.hpp"
 #include "writer.hpp"  // support .gz format out
 #include "gwasQC.hpp" // basic QC
+#include "log.hpp"
+#include "dbsnp.hpp"
+
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <deque>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -22,15 +26,23 @@
 using namespace std;
 
 void process_gwas(const Params& P,
-                    const unordered_map<string,string>& mapdb)
+                    const DBMap& mapdb)
 {
-    vector<string> gwas_lines;
+    // threads
+    #ifdef _OPENMP
+    if (P.threads > 0) {
+        omp_set_num_threads(P.threads);
+        LOG_INFO("Using threads = " + std::to_string(P.threads));
+    }
+    #endif
+
+    deque<string> gwas_lines;
     string line;
     
     //================ 1. 读取 GWAS header =================
     LineReader reader(P.gwas_file);
     if (!reader.getline(line)) {
-        cerr << "Empty GWAS summary file.\n";
+        LOG_ERROR("Empty GWAS summary file.");
         exit(1);
     }
 
@@ -45,7 +57,8 @@ void process_gwas(const Params& P,
     int gP   = find_col(header, P.g_p);
 
     if (gCHR<0||gPOS<0||gA1<0||gA2<0||gP<0){
-        cerr << "GWAS header incomplete.\n"; exit(1);
+        LOG_ERROR("GWAS header incomplete.");
+        exit(1);
     }
 
     // format = smr
@@ -59,7 +72,7 @@ void process_gwas(const Params& P,
         colN    = find_col(header, P.col_n);
 
         if (colFreq<0 || colBeta<0 || colSe<0 || colN<0) {
-            cerr << "Error: SMR format requires freq, beta, se, n columns. \n";
+            LOG_ERROR("Error: SMR format requires freq, beta, se, n columns.");
             exit(1);
         }
     }
@@ -75,8 +88,8 @@ void process_gwas(const Params& P,
     //     colN    = find_col(header, P.col_n);
 
     //     if (colFreq<0 || colBeta<0 || colSe<0 || colN<0) {
-    //         cerr << "Error: SMR format requires freq, beta, se, n columns. \n";
-    //         exit(1);
+            // LOG_ERROR("Error: SMR format requires freq, beta, se, n columns.");
+            // exit(1);
     //     }
     // }
     
@@ -85,6 +98,9 @@ void process_gwas(const Params& P,
         if (line.empty()) continue;
         gwas_lines.push_back(line);
     }
+    
+    size_t n = gwas_lines.size();
+    LOG_INFO("Loaded GWAS lines (data): " + std::to_string(n));
 
     //================ 基础 QC：过滤无效 N/beta/se/freq/P =================
     vector<bool> keep_qc(gwas_lines.size(), true);
@@ -97,9 +113,6 @@ void process_gwas(const Params& P,
     double maf   = P.maf_threshold;
     
     gwas_basic_qc(gwas_lines, header, idx_beta, idx_se, idx_freq, idx_pv, idx_n, keep_qc, maf);
-
-    size_t n = gwas_lines.size();
-    cerr << "Loaded GWAS lines (data): " << n << endl;
 
     vector<bool>    keep(n,false);
     vector<string>  rsid_vec(n);
@@ -124,11 +137,17 @@ void process_gwas(const Params& P,
 
         if ((int)f.size() <= max_col) continue;
 
+        // chr-bucket DBMap
         string key = make_key(f[gCHR], f[gPOS], f[gA1], f[gA2]);
-        auto it = mapdb.find(key);
-        if (it != mapdb.end()){
-            keep[i]     = true;
-            rsid_vec[i] = it->second;
+        string chr = norm_chr(f[gCHR]);
+
+        auto it_chr = mapdb.find(chr);
+        if (it_chr != mapdb.end()) {
+            auto it = it_chr->second.find(key);
+            if (it != it_chr->second.end()) {
+                keep[i] = true;
+                rsid_vec[i] = it->second;
+            }
         }
     }
     
@@ -154,7 +173,7 @@ void process_gwas(const Params& P,
     Writer funm(out_unmatch, P.format);
 
     if (!fout.good() || !funm.good()) {
-        std::cerr << "Error opening output file.\n";
+        LOG_ERROR("Error opening output file.");
         exit(1);
     }
     

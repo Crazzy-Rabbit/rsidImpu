@@ -30,6 +30,13 @@ struct Params {
     bool remove_dup_snp;      // --remove-dup-snp
     double maf_threshold;     // --maf (default 0.01)
 
+    // ---------- Threads ----------
+    int    threads;          // --threads
+    
+    // ---------- Logging ----------
+    bool        log_enabled; // --log
+    std::string log_file;
+
     // ---------- Output format columns ----------
     std::string format;
     std::string col_freq;

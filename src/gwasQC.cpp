@@ -7,6 +7,7 @@
 
 #include "gwasQC.hpp"
 #include "util.hpp"
+#include "log.hpp"
 #include <iostream>
 #include <algorithm>
 #include <unordered_map>
@@ -25,7 +26,7 @@ static bool parse_num(const string &s, double &v){
 // basic QC + MAF 
 // ---------------------------
 void gwas_basic_qc(
-    vector<string> &lines,
+    deque<string> &lines,
     const vector<string> &header,
     int idx_beta,
     int idx_se,
@@ -79,13 +80,13 @@ void gwas_basic_qc(
 
         kept++;
     }
-
-    cerr << "[QC] Basic QC done: " << kept << " passed, " << dropped << " removed.\n";
+    
+    LOG_INFO("Basic QC done: " + std::to_string(kept) + " passed, " + std::to_string(dropped) + " removed.");
 }
 
 // remove dup SNPs, retain small p 
 void gwas_remove_dup(
-    vector<string> &lines,
+    deque<string> &lines,
     const vector<string> &header,
     int idx_p,
     vector<string> &rsid_vec,
@@ -138,5 +139,5 @@ void gwas_remove_dup(
         }
     }
 
-    cerr << "[QC] Duplicate SNPs removal done. Removed = " << dropped << endl;
+    LOG_INFO("Duplicate SNPs removal done. Removed = " + std::to_string(dropped));
 }
