@@ -1,3 +1,10 @@
+//
+//  writer.cpp
+//  rsidImpu
+//  Created by Lulu Shi on 25/11/2025.
+//  Copyright © 2025 Lulu Shi. All rights reserved.
+//
+
 #include "writer.hpp"
 #include "util.hpp"   // 用里面的 ends_with
 #include <iostream>

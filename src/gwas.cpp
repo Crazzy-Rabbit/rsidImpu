@@ -10,6 +10,7 @@
 #include "allele.hpp"
 #include "util.hpp"
 #include "writer.hpp"  // support .gz format out
+#include "gwasQC.hpp" // basic QC
 #include <fstream>
 #include <iostream>
 #include <algorithm>
@@ -85,11 +86,28 @@ void process_gwas(const Params& P,
         gwas_lines.push_back(line);
     }
 
+    //================ 基础 QC：过滤无效 N/beta/se/freq/P =================
+    vector<bool> keep_qc(gwas_lines.size(), true);
+
+    int idx_beta = find_col(header, P.col_beta);
+    int idx_se   = find_col(header, P.col_se);
+    int idx_freq = find_col(header, P.col_freq);
+    int idx_pv   = find_col(header, P.g_p);     // pval
+    int idx_n    = find_col(header, P.col_n);
+    double maf   = P.maf_threshold;
+    
+    gwas_basic_qc(gwas_lines, header, idx_beta, idx_se, idx_freq, idx_pv, idx_n, keep_qc, maf);
+
     size_t n = gwas_lines.size();
-    cerr << "Loaded GWAS lines (data): " << n  << endl;
+    cerr << "Loaded GWAS lines (data): " << n << endl;
 
     vector<bool>    keep(n,false);
     vector<string>  rsid_vec(n);
+    
+    // ---------- 把 QC 过滤结果同步到 keep ----------
+    for (size_t i = 0; i < n; i++){
+        if (!keep_qc[i]) keep[i] = false;
+    }
 
     //================ 3. 匹配 dbSNP，确定哪些行有 rsid =================
 #ifdef _OPENMP
@@ -112,6 +130,16 @@ void process_gwas(const Params& P,
             keep[i]     = true;
             rsid_vec[i] = it->second;
         }
+    }
+    
+    if (P.remove_dup_snp) {
+        gwas_remove_dup(
+            gwas_lines,
+            header,
+            gP,          // P 列 index
+            rsid_vec,
+            keep
+        );
     }
     
     //================ 4. 构建 Writer（自动 txt / gz） =================

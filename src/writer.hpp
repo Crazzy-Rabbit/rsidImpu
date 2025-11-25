@@ -1,3 +1,10 @@
+//
+//  writer.hpp
+//  rsidImpu
+//  Created by Lulu Shi on 25/11/2025.
+//  Copyright © 2025 Lulu Shi. All rights reserved.
+//
+
 #ifndef RSIDIMPU_WRITER_HPP
 #define RSIDIMPU_WRITER_HPP
 

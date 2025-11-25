@@ -1,11 +1,10 @@
-# rsidImpu
+# 📘rsidImpu
 
-**A high-performance tool to annotate GWAS summary statistics with correct rsid using dbSNP.**
+**A high-performance tool to annotate GWAS summary statistics with accurate rsIDs using dbSNP.**
 
-`rsidImpu` is a lightweight, fast, and scalable C++ tool designed for genome-wide association study (GWAS) datasets.
-It matches GWAS variants to dbSNP records using **chromosome + position + allele matching (with flip & strand complement support)** and outputs both matched and unmatched variants.
+`rsidImpu` is designed for large-scale genome-wide association studies (GWAS), providing fast and accurate rsID matching via **chromosome + position + allele comparison** (with support for allele flipping and strand complement).
 
-This tool is optimized for performance and can handle extremely large datasets, including:
+The tool supports **QC filtering, SMR-formatted output, gzip input/output**, and **multi-thread acceleration**.
 
 - **15GB+ dbSNP** reference files (tsv or gz)
 - **millions of GWAS variants**
@@ -14,28 +13,38 @@ This tool is optimized for performance and can handle extremely large datasets, 
 
 ---
 
-## ✨ Features
+## ✨ Key Features
 
 ### ✔ Accurate RSID Matching
 
-- Matches variants by **chromosome + position + allele information**
-- Allows:
+- Matches variants by **CHR + POS + allele information**
+- Supports:
   - Allele flipping (A1/A2 ↔ A2/A1)
   - Strand complement matching (A↔T, C↔G)
 
 ### ✔ High Performance
 
-- Multithreaded (OpenMP)
-- Streamed reading of large files
-- Zero-copy gzip reader
-- Hash-based dbSNP lookup (`unordered_map`)
+- OpenMP multithreading
+- Efficient gzipped input/output
+- Hash-based dbSNP lookup
+- Capable of processing:
+  - **15GB+ dbSNP files**
+  - **Millions of GWAS variants**
 
-### ✔ Clean Output
+### ✔ Clean & Flexible Output
 
 - Matched rows → `<out>.txt`
 - Unmatched rows → `<out>.txt.unmatched`
 - GWAS alleles are **never modified** (A1/A2 remain as-is)
-- SMR output format available: `SNP A1 A2 freq beta se P N`
+- Optional **SMR output format**: `SNP A1 A2 freq beta se P N`
+
+### ✔ Built-in QC Module
+
+(Optional, user-controlled)
+
+- Remove invalid rows (non-finite N/beta/se/freq/P)
+- Filter by MAF (default: 0.01)
+- Remove duplicated SNPs (keep the one with lowest P)
 
 ## 📦 Installation
 
@@ -47,21 +56,20 @@ Requirements:
 - zlib
 - OpenMP (optional but recommended)
 
-If needed:
-```
-sudo apt install zlib1g-dev
-sudo apt install libomp-dev
-```
 ### Compile manually:
 
 ```
 git clone https://github.com/Crazzy-Rabbit/rsidImpu.git
 cd rsidImpu/src
+make clean
 make
 ```
 
+The binary `rsidImpu` will be generated in the src/ directory.
+
 ## 🚀 Usage
-### Basic example (default)
+
+### Basic example (default GWAS format)
 
 ```
 rsidImpu
@@ -72,6 +80,7 @@ rsidImpu
 ```
 
 ### SMR Output Format Example
+
 ```
 rsidImpu \
   --gwas-summary example/gwas_test_clean.txt \
@@ -80,6 +89,20 @@ rsidImpu \
   --dbchr CHR --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID \
   --format smr \
   --freq Freq --beta Beta --se SE --n N --pval P
+```
+
+### With QC enabled
+
+```
+rsidImpu \
+  --gwas-summary example/gwas_test_clean.txt \
+  --dbsnp example/dbsnp_test.txt \
+  --out example/gwas_rsid.smr.gz \
+  --dbchr CHR --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID \
+  --format smr \
+  --freq Freq --beta Beta --se SE --n N --pval P \
+  --remove-dup-snp \
+  --maf 0.01
 ```
 
 ### Show help
@@ -124,7 +147,9 @@ Required columns:
 - RSID
 
 #### 2️⃣ PLINK `.bim` or `.bim.gz`
+
 Automatically parsed as:
+
 ```
 CHR  SNP  CM  POS  A1  A2
 ```
@@ -145,12 +170,22 @@ Format depends on --format:
 Written to: `<out>`.unmatched or `<out>`.unmatched.gz
 
 ### 🧪 Example Output (SMR Format)
+
 ```
 SNP       A1  A2  freq   beta    se      P       N
 rs1000    A   G   0.37   0.145   0.035   1e-5    50000
 rs2000    T   C   0.42  -0.080   0.025   2e-3    50000
 ...
 ```
+
+### 🧹 QC Module Summary
+
+```
+--remove-dup-snp	Remove duplicated SNPs (keep lowest P)
+--maf <val>	        MAF threshold (default 0.01)
+Auto-QC         	Remove lines with non-finite freq/beta/se/N/P, or p outside [0,1]
+```
+
 ### 🔧 Notes
 
 - Allele matching allows:
@@ -161,9 +196,11 @@ rs2000    T   C   0.42  -0.080   0.025   2e-3    50000
 - Gzip input/output is supported automatically based on filename suffix .gz
 
 ## ❤️ Acknowledgement
+
 Special thanks to ChatGPT for code assistance and architectural optimization during tool development.
 
 ## 📫Contract
+
 If you have any questions or suggestions, feel free to reach out:
 
 📧 crazzy_rabbit@163.com

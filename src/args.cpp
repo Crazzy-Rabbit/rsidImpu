@@ -8,6 +8,8 @@
 
 #include "args.hpp"
 #include <iostream>
+#include <cstdlib>
+#include <set>
 
 using namespace std;
 
@@ -31,7 +33,7 @@ void print_help(){
     << "  --dbA1             COL      Allele1 (REF) column in dbSNP\n"
     << "  --dbA2             COL      Allele2 (ALT) column in dbSNP\n"
     << "  --dbrsid           COL      RSID column in dbSNP\n\n"
-
+    << "------------------------------------------------------------------\n"
     << "Additional optional parameters (output format):\n"
     << "  --format           STR      Output format (default: gwas)\n"
     << "                              Options:\n"
@@ -41,24 +43,24 @@ void print_help(){
     << "  --beta             COL      Beta/Effect column              (default: beta)\n"
     << "  --se               COL      Standard error column           (default: se)\n"
     << "  --n                COL      Sample size column              (default: N)\n\n"
-
-    << "Notes:\n"
-    << "  * Matching allows allele flipping (A1/A2 <-> A2/A1)\n"
-    << "  * Matching allows strand complementarity (A<->T, C<->G)\n"
-    << "  * GWAS alleles are NEVER modified — only RSID is added\n"
-    << "  * Only matched GWAS rows are kept in output\n"
-    << "  * Supports gzipped input (.gz)\n\n"
-
+    << "------------------------------------------------------------------\n"
+    << "Quality Control (QC) options:\n"
+    << "  --remove-dup-snp            Remove duplicate SNPs (keep lowest P)\n"
+    << "  --maf              VAL      MAF threshold, default = 0.01\n\n"
+    << "------------------------------------------------------------------\n"
     << "Example:\n"
     << "  rsidImpu \\\n"
-    << "    --gwas-summary gwas.txt --dbsnp dbsnp.txt --out gwas_rsid.txt \\\n"
-    << "    --chr CHR --pos POS --A1 EA --A2 OA --pval PVAL \\\n"
-    << "    --dbchr CHROM --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID\n\n"
+    << "    --gwas-summary gwas.txt --dbsnp dbsnp.txt --out out.txt \\\n"
+    << "    --chr CHR --pos POS --A1 A1 --A2 A2 --pval P \\\n"
+    << "    --dbchr CHR --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID \\\n"
+    << "    --remove-dup-snp --maf 0.01 --format smr --freq Freq --beta Beta --se SE --n N\n\n"
     << "******************************************************************\n";
 }
 
 Params parse_args(int argc, char* argv[]) {
     map<string,string> args;
+    //  ----------- FLAG 参数（无需 value 的开关）-----------
+    set<string> flag_params = {"--remove-dup-snp"};
     
     cout << "******************************************************************\n";
     cout << "* rsidImpu                                                       *\n";
@@ -75,12 +77,25 @@ Params parse_args(int argc, char* argv[]) {
         }
     }
     
-    for (int i=1; i<argc; i+=2){
-        if (i+1 >= argc){
-            cerr << "Error: missing value for " << argv[i] << endl;
+    // ----------- 参数解析（支持 flag）-------------
+    int i = 1;
+    while (i < argc){
+        string key = argv[i];
+
+        if (flag_params.count(key)){
+            args[key] = "1";
+            i += 1;
+            continue;
+        }
+
+        if (i+1 >= argc) {
+            cerr << "Error: missing value for " << key << "\n";
             exit(1);
         }
-        args[argv[i]] = argv[i + 1];
+
+        string val = argv[i+1];
+        args[key] = val;
+        i += 2;
     }
 
     if (!args.count("--gwas-summary") || !args.count("--dbsnp") || !args.count("--out")){
@@ -90,6 +105,7 @@ Params parse_args(int argc, char* argv[]) {
     }
 
     Params P;
+    // ---------- Required files ----------
     P.gwas_file = args["--gwas-summary"];
     P.dbsnp_file = args["--dbsnp"];
     P.out_file = args["--out"];
@@ -99,7 +115,11 @@ Params parse_args(int argc, char* argv[]) {
     P.g_pos = args.count("--pos") ? args["--pos"] : "POS";
     P.g_A1  = args.count("--A1")  ? args["--A1"]  : "A1";
     P.g_A2  = args.count("--A2")  ? args["--A2"]  : "A2";
-    P.g_p    = args.count("--pval")   ? args["--pval"]   : "P";
+    P.g_p   = args.count("--pval")  ? args["--pval"]  : "P";
+
+    // ---------- QC options ----------
+    P.remove_dup_snp = args.count("--remove-dup-snp");
+    P.maf_threshold  = args.count("--maf") ? stod(args["--maf"]) : 0.01;
     
     // ----------------- output format columns -----------------
     P.format   = args.count("--format") ? args["--format"] : "gwas";
@@ -124,4 +144,3 @@ Params parse_args(int argc, char* argv[]) {
 
     return P;
 }
-

@@ -18,6 +18,7 @@ SRC = \
 	linereader.cpp \
 	dbsnp.cpp \
 	gwas.cpp \
+	gwasQC.cpp \
 	allele.cpp \
 	writer.cpp
 

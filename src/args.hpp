@@ -14,14 +14,38 @@
 #include <map>
 
 struct Params {
-    std::string gwas_file, dbsnp_file, out_file;
-    std::string g_chr, g_pos, g_A1, g_A2, g_p;
-    std::string d_chr, d_pos, d_A1, d_A2, d_rsid; 
-    std::string format, col_freq, col_beta, col_se, col_n;
+    // ---------- Required input/output files ----------
+    std::string gwas_file;
+    std::string dbsnp_file;
+    std::string out_file;
+
+    // ---------- GWAS columns ----------
+    std::string g_chr;
+    std::string g_pos;
+    std::string g_A1;
+    std::string g_A2;
+    std::string g_p;
+
+    // ---------- QC options (NEW) ----------
+    bool remove_dup_snp;      // --remove-dup-snp
+    double maf_threshold;     // --maf (default 0.01)
+
+    // ---------- Output format columns ----------
+    std::string format;
+    std::string col_freq;
+    std::string col_beta;
+    std::string col_se;
+    std::string col_n;
+
+    // ---------- dbSNP columns ----------
+    std::string d_chr;
+    std::string d_pos;
+    std::string d_A1;
+    std::string d_A2;
+    std::string d_rsid;
 };
 
 void print_help();
-
 Params parse_args(int argc, char* argv[]);
 
 #endif
