@@ -133,7 +133,7 @@ CHR  SNP  CM  POS  A1  A2
 
 ### **Matched variants**
 
-Written to:  <out> or <out>.gz\
+Written to:  `<out>` or `<out>`.gz\
 
 Format depends on --format:
 
@@ -142,7 +142,7 @@ Format depends on --format:
 
 ### **Unmatched variants**
 
-Written to: <out>.unmatched or <out>.unmatched.gz
+Written to: `<out>`.unmatched or `<out>`.unmatched.gz
 
 ### 🧪 Example Output (SMR Format)
 ```
