@@ -9,8 +9,10 @@
 #include "linereader.hpp"
 #include "allele.hpp"
 #include "util.hpp"
+#include "writer.hpp"  // support .gz format out
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -23,11 +25,18 @@ void process_gwas(const Params& P,
 {
     vector<string> gwas_lines;
     string line;
-
+    
+    //================ 1. 读取 GWAS header =================
     LineReader reader(P.gwas_file);
-    reader.getline(line);
-    auto header = split(line);
+    if (!reader.getline(line)) {
+        cerr << "Empty GWAS summary file.\n";
+        exit(1);
+    }
 
+    line.erase(remove(line.begin(), line.end(), '\r'), line.end());
+    auto header = split(line);
+    
+    // find the col, CHR, POS, A1, A2, P 列
     int gCHR = find_col(header, P.g_chr);
     int gPOS = find_col(header, P.g_pos);
     int gA1  = find_col(header, P.g_A1);
@@ -38,14 +47,51 @@ void process_gwas(const Params& P,
         cerr << "GWAS header incomplete.\n"; exit(1);
     }
 
+    // format = smr
+    int colFreq = -1, colBeta = -1, colSe = -1, colN = -1;
+    bool is_smr = (P.format == "smr");
+
+    if (is_smr){
+        colFreq = find_col(header, P.col_freq);
+        colBeta = find_col(header, P.col_beta);
+        colSe   = find_col(header, P.col_se);
+        colN    = find_col(header, P.col_n);
+
+        if (colFreq<0 || colBeta<0 || colSe<0 || colN<0) {
+            cerr << "Error: SMR format requires freq, beta, se, n columns. \n";
+            exit(1);
+        }
+    }
+
+    // format = smr
+    // int colFreq = -1, colBeta = -1, colSe = -1, colN = -1;
+    // bool is_smr = (P.format == "smr");
+
+    // if (is_smr){
+    //     colFreq = find_col(header, P.col_freq);
+    //     colBeta = find_col(header, P.col_beta);
+    //     colSe   = find_col(header, P.col_se);
+    //     colN    = find_col(header, P.col_n);
+
+    //     if (colFreq<0 || colBeta<0 || colSe<0 || colN<0) {
+    //         cerr << "Error: SMR format requires freq, beta, se, n columns. \n";
+    //         exit(1);
+    //     }
+    // }
+    
+    //================ 2. 读入 GWAS 数据行 =================
     while (reader.getline(line)){
-        if (!line.empty()) gwas_lines.push_back(line);
+        if (line.empty()) continue;
+        gwas_lines.push_back(line);
     }
 
     size_t n = gwas_lines.size();
-    vector<bool> keep(n,false);
-    vector<string> rsid_vec(n);
+    cerr << "Loaded GWAS lines (data): " << n  << endl;
 
+    vector<bool>    keep(n,false);
+    vector<string>  rsid_vec(n);
+
+    //================ 3. 匹配 dbSNP，确定哪些行有 rsid =================
 #ifdef _OPENMP
     #pragma omp parallel for
 #endif
@@ -57,32 +103,99 @@ void process_gwas(const Params& P,
         if (gA1  > max_col) max_col = gA1;
         if (gA2  > max_col) max_col = gA2;
         if (gP   > max_col) max_col = gP;
+
         if ((int)f.size() <= max_col) continue;
 
         string key = make_key(f[gCHR], f[gPOS], f[gA1], f[gA2]);
         auto it = mapdb.find(key);
         if (it != mapdb.end()){
-            keep[i] = true;
+            keep[i]     = true;
             rsid_vec[i] = it->second;
         }
     }
+    
+    //================ 4. 构建 Writer（自动 txt / gz） =================
+    bool out_is_gz = ends_with(P.out_file, ".gz");
 
-    ofstream fout(P.out_file);
-    for (size_t i=0; i<header.size(); i++){
-        if (i) fout << '\t';
-        fout << header[i];
+    std::string out_main    = P.out_file;
+    std::string out_unmatch = out_is_gz ?
+                                (P.out_file + ".unmatched.gz") :
+                                (P.out_file + ".unmatched");
+    
+    Writer fout(out_main, P.format);
+    Writer funm(out_unmatch, P.format);
+
+    if (!fout.good() || !funm.good()) {
+        std::cerr << "Error opening output file.\n";
+        exit(1);
     }
-    fout << '\t' << "SNP\n";
+    
+    // header 
+    if (is_smr){
+        fout.write_smr_header();
+        funm.write_smr_header();
+    } else {
+        std::string header_line;
+        for (size_t i=0; i<header.size(); ++i){
+            if (i) header_line += '\t';
+            header_line += header[i];
+        }
+        header_line += '\t';
+        header_line += "SNP";
 
-    ofstream funm(P.out_file + ".unmatched");
-
+        fout.write_line(header_line);
+        funm.write_line(header_line);
+    }
+    
+    // outfile 
     for (size_t i=0; i<n; i++){
-        if (keep[i])
-            fout << gwas_lines[i] << '\t' << rsid_vec[i] << '\n';
-        else
-            funm << gwas_lines[i] << '\n';
-    }
+        gwas_lines[i].erase(
+            std::remove(gwas_lines[i].begin(), gwas_lines[i].end(), '\r'),
+            gwas_lines[i].end()
+        );
 
-    fout.close();
-    funm.close();
+        if (!keep[i]) {
+            // unmatched 行直接写到 unmatched 文件
+            funm.write_line(gwas_lines[i]);
+            continue;
+        }
+
+        // 只对 matched 行进行格式化输出
+        if (is_smr) {
+            // ------------- SMR 格式输出 -------------
+            auto f = split(gwas_lines[i]);
+
+            int max_col2 = colFreq;
+            max_col2 = std::max(max_col2, colBeta);
+            max_col2 = std::max(max_col2, colSe);
+            max_col2 = std::max(max_col2, colN);
+            max_col2 = std::max(max_col2, gA1);
+            max_col2 = std::max(max_col2, gA2);
+            max_col2 = std::max(max_col2, gP);
+
+            if ((int)f.size() <= max_col2) {
+                // 万一这一行列数不够，当 unmatched 处理
+                funm.write_line(gwas_lines[i]);
+                continue;
+            }
+
+            // SNP A1 A2 freq beta se P N
+            string out_line =
+                rsid_vec[i]   + "\t" +
+                f[gA1]        + "\t" +
+                f[gA2]        + "\t" +
+                f[colFreq]    + "\t" +
+                f[colBeta]    + "\t" +
+                f[colSe]      + "\t" +
+                f[gP]         + "\t" +
+                f[colN];
+
+            fout.write_line(out_line);
+        } else {
+            // ------------- 默认 gwas 格式输出 -------------
+            // 原始行 + SNP
+            string out_line = gwas_lines[i] + "\t" + rsid_vec[i];
+            fout.write_line(out_line);
+        }
+    }
 }

@@ -18,7 +18,8 @@ SRC = \
 	linereader.cpp \
 	dbsnp.cpp \
 	gwas.cpp \
-	allele.cpp
+	allele.cpp \
+	writer.cpp
 
 # Convert .cpp → .o
 OBJ = $(SRC:.cpp=.o)

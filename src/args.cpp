@@ -32,6 +32,16 @@ void print_help(){
     << "  --dbA2             COL      Allele2 (ALT) column in dbSNP\n"
     << "  --dbrsid           COL      RSID column in dbSNP\n\n"
 
+    << "Additional optional parameters (output format):\n"
+    << "  --format           STR      Output format (default: gwas)\n"
+    << "                              Options:\n"
+    << "                                 gwas  : original GWAS header + SNP (default)\n"
+    << "                                 smr   : SMR input format (SNP,A1,A2,Freq,Beta,SE,P,N)\n\n"
+    << "  --freq             COL      Frequency column in GWAS file   (default: freq)\n"
+    << "  --beta             COL      Beta/Effect column              (default: beta)\n"
+    << "  --se               COL      Standard error column           (default: se)\n"
+    << "  --n                COL      Sample size column              (default: N)\n\n"
+
     << "Notes:\n"
     << "  * Matching allows allele flipping (A1/A2 <-> A2/A1)\n"
     << "  * Matching allows strand complementarity (A<->T, C<->G)\n"
@@ -84,11 +94,19 @@ Params parse_args(int argc, char* argv[]) {
     P.dbsnp_file = args["--dbsnp"];
     P.out_file = args["--out"];
 
+    // --------------------- GWAS columns -------------------
     P.g_chr = args.count("--chr") ? args["--chr"] : "CHR";
     P.g_pos = args.count("--pos") ? args["--pos"] : "POS";
     P.g_A1  = args.count("--A1")  ? args["--A1"]  : "A1";
     P.g_A2  = args.count("--A2")  ? args["--A2"]  : "A2";
-    P.g_p   = args.count("--pval") ? args["--pval"] : "P";
+    P.g_p    = args.count("--pval")   ? args["--pval"]   : "P";
+    
+    // ----------------- output format columns -----------------
+    P.format   = args.count("--format") ? args["--format"] : "gwas";
+    P.col_freq = args.count("--freq")   ? args["--freq"]   : "freq";
+    P.col_beta = args.count("--beta")   ? args["--beta"]   : "beta";
+    P.col_se   = args.count("--se")     ? args["--se"]     : "se";
+    P.col_n    = args.count("--n")      ? args["--n"]      : "N";
 
     vector<string> required = {"--dbchr","--dbpos","--dbA1","--dbA2","--dbrsid"};
     for (auto &k : required) {
@@ -106,3 +124,4 @@ Params parse_args(int argc, char* argv[]) {
 
     return P;
 }
+
