@@ -55,7 +55,6 @@ unzip rsidImpu.zip
 
 cd rsidImpu/src 
 make
-
 ```
 
 ## 🚀 Usage
@@ -110,7 +109,7 @@ Required columns:
 
 ### **Matched variants**
 
-Written to:  out.txt
+Written to:  out.txt\
 `<original GWAS columns>` SNP
 
 ### **Unmatched variants**
@@ -118,7 +117,7 @@ Written to:  out.txt
 Written to: out.txt.unmatched
 
 ## 📤 Acknowledgement
+Thanks for the code support provided by ChatGPT.
 
-```
-Thanks for the code support provided by Chat GPT.
-```
+## 📫Contract
+If you have any questions, please feel free to contact us at crazzy_rabbit@163.com at any time.
