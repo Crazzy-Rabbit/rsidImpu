@@ -73,7 +73,6 @@ The binary `rsidImpu` will be generated in the src/ directory.
 ## 🚀 Usage
 
 ### Basic example (default GWAS format)
-
 ```
 rsidImpu
   --gwas-summary example/gwas_test_clean.txt \
@@ -83,7 +82,6 @@ rsidImpu
 ```
 
 ### SMR Output Format Example
-
 ```
 rsidImpu \
   --gwas-summary example/gwas_test_clean.txt \
@@ -95,7 +93,6 @@ rsidImpu \
 ```
 
 ### With QC enabled
-
 ```
 rsidImpu \
   --gwas-summary example/gwas_test_clean.txt \
@@ -106,6 +103,41 @@ rsidImpu \
   --freq Freq --beta Beta --se SE --n N --pval P \
   --remove-dup-snp \
   --maf 0.01
+```
+
+### Using multiple threads (OpenMP)
+```
+rsidImpu
+  --gwas-summary example/gwas_test_clean.txt \
+  --dbsnp example/dbsnp_test.txt \
+  --out example/gwas_rsid.txt \
+  --dbchr CHR --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID \
+  --threads 16
+```
+
+### Enable logging
+```
+rsidImpu
+  --gwas-summary example/gwas_test_clean.txt \
+  --dbsnp example/dbsnp_test.txt \
+  --out example/gwas_rsid.txt \
+  --dbchr CHR --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID \
+  --log rsidImpu.log
+```
+
+### Full-featured example (threads + QC + log + SMR)
+```
+rsidImpu \
+  --gwas-summary example/gwas_test_clean.txt \
+  --dbsnp example/dbsnp_test.txt \
+  --out example/gwas_rsid.smr.gz \
+  --dbchr CHR --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID \
+  --format smr \
+  --freq Freq --beta Beta --se SE --n N --pval P \
+  --remove-dup-snp \
+  --maf 0.01 \
+  --threads 16 \
+  --log rsidImpu.log
 ```
 
 ### Show help
