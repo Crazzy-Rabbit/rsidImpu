@@ -41,7 +41,7 @@ void print_help(){
     << "  --format           STR      Output format (default: gwas)\n"
     << "                              Options:\n"
     << "                                 gwas  : original GWAS header + SNP (default)\n"
-    << "                                 smr   : SMR input format (SNP,A1,A2,Freq,Beta,SE,P,N)\n\n"
+    << "                                 cojo  : COJO input format (SNP,A1,A2,freq,b,se,p,N)\n\n"
     << "  --freq             COL      Frequency column in GWAS file   (default: freq)\n"
     << "  --beta             COL      Beta/Effect column              (default: beta)\n"
     << "  --se               COL      Standard error column           (default: se)\n"
@@ -61,7 +61,7 @@ void print_help(){
     << "    --gwas-summary gwas.txt --dbsnp dbsnp.txt --out out.txt \\\n"
     << "    --chr CHR --pos POS --A1 A1 --A2 A2 --pval P \\\n"
     << "    --dbchr CHR --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID \\\n"
-    << "    --remove-dup-snp --maf 0.01 --format smr --freq Freq --beta Beta --se SE --n N\n"
+    << "    --remove-dup-snp --maf 0.01 --format cojo --freq Freq --beta Beta --se SE --n N\n"
     << "******************************************************************\n";
 }
 

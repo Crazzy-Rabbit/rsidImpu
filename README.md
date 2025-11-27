@@ -4,7 +4,7 @@
 
 `rsidImpu` is designed for large-scale genome-wide association studies (GWAS), providing fast and accurate rsID matching via **chromosome + position + allele comparison** (with support for allele flipping and strand complement).
 
-The tool supports **QC filtering, SMR-formatted output, gzip input/output**, and **multi-thread acceleration**.
+The tool supports **QC filtering, COJO-formatted output, gzip input/output**, and **multi-thread acceleration**.
 
 - **15GB+ dbSNP** reference files (tsv or gz)
 - **millions of GWAS variants**
@@ -39,7 +39,7 @@ All components—logging, hashing, QC, matching—are thread-safe and determinis
 - Matched rows → `<out>.txt`
 - Unmatched rows → `<out>.txt.unmatched`
 - GWAS alleles are **never modified** (A1/A2 remain as-is)
-- Optional **SMR output format**: `SNP A1 A2 freq beta se P N`
+- Optional **COJO output format**: `SNP A1 A2 freq b se p N`
 
 ### ✔ Built-in QC Module
 
@@ -81,14 +81,14 @@ rsidImpu
   --dbchr CHR --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID
 ```
 
-### SMR Output Format Example
+### COJO Output Format Example
 ```
 rsidImpu \
   --gwas-summary example/gwas_test_clean.txt \
   --dbsnp example/dbsnp_test.txt \
-  --out example/gwas_rsid.smr.gz \
+  --out example/gwas_rsid.cojo.gz \
   --dbchr CHR --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID \
-  --format smr \
+  --format cojo \
   --freq Freq --beta Beta --se SE --n N --pval P
 ```
 
@@ -97,9 +97,9 @@ rsidImpu \
 rsidImpu \
   --gwas-summary example/gwas_test_clean.txt \
   --dbsnp example/dbsnp_test.txt \
-  --out example/gwas_rsid.smr.gz \
+  --out example/gwas_rsid.cojo.gz \
   --dbchr CHR --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID \
-  --format smr \
+  --format cojo \
   --freq Freq --beta Beta --se SE --n N --pval P \
   --remove-dup-snp \
   --maf 0.01
@@ -125,14 +125,14 @@ rsidImpu
   --log rsidImpu.log
 ```
 
-### Full-featured example (threads + QC + log + SMR)
+### Full-featured example (threads + QC + log + COJO)
 ```
 rsidImpu \
   --gwas-summary example/gwas_test_clean.txt \
   --dbsnp example/dbsnp_test.txt \
-  --out example/gwas_rsid.smr.gz \
+  --out example/gwas_rsid.cojo.gz \
   --dbchr CHR --dbpos POS --dbA1 REF --dbA2 ALT --dbrsid RSID \
-  --format smr \
+  --format cojo \
   --freq Freq --beta Beta --se SE --n N --pval P \
   --remove-dup-snp \
   --maf 0.01 \
@@ -160,10 +160,10 @@ Required columns:
 - A2
 - P (p-value)
 
-Additional columns needed for SMR format:
+Additional columns needed for COJO format:
 
 - freq
-- beta
+- b
 - se
 - N
 
@@ -198,16 +198,16 @@ Written to:  `<out>` or `<out>`.gz\
 Format depends on --format:
 
 - gwas → `original GWAS columns + SNP`
-- smr → `SNP A1 A2 freq beta se P N`
+- cojo → `SNP A1 A2 freq beta se P N`
 
 ### **Unmatched variants**
 
 Written to: `<out>`.unmatched or `<out>`.unmatched.gz
 
-### 🧪 Example Output (SMR Format)
+### 🧪 Example Output (COJO Format)
 
 ```
-SNP       A1  A2  freq   beta    se      P       N
+SNP       A1  A2  freq   b    se      p       N
 rs1000    A   G   0.37   0.145   0.035   1e-5    50000
 rs2000    T   C   0.42  -0.080   0.025   2e-3    50000
 ...

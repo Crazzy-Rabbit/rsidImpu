@@ -61,18 +61,18 @@ void process_gwas(const Params& P,
         exit(1);
     }
 
-    // format = smr
+    // format = cojo
     int colFreq = -1, colBeta = -1, colSe = -1, colN = -1;
-    bool is_smr = (P.format == "smr");
+    bool is_cojo = (P.format == "cojo");
 
-    if (is_smr){
+    if (is_cojo){
         colFreq = find_col(header, P.col_freq);
         colBeta = find_col(header, P.col_beta);
         colSe   = find_col(header, P.col_se);
         colN    = find_col(header, P.col_n);
 
         if (colFreq<0 || colBeta<0 || colSe<0 || colN<0) {
-            LOG_ERROR("Error: SMR format requires freq, beta, se, n columns.");
+            LOG_ERROR("Error: COJO format requires freq, beta, se, n columns.");
             exit(1);
         }
     }
@@ -138,8 +138,11 @@ void process_gwas(const Params& P,
         if ((int)f.size() <= max_col) continue;
 
         // chr-bucket DBMap
-        string key = make_key(f[gCHR], f[gPOS], f[gA1], f[gA2]);
+        // string key = make_key(f[gCHR], f[gPOS], f[gA1], f[gA2]);
         string chr = norm_chr(f[gCHR]);
+        string pos = f[gPOS];
+        auto canon = canonical_alleles(f[gA1], f[gA2]);
+        string key = pos + ":" + canon.first + ":" + canon.second;
 
         auto it_chr = mapdb.find(chr);
         if (it_chr != mapdb.end()) {
@@ -165,9 +168,13 @@ void process_gwas(const Params& P,
     bool out_is_gz = ends_with(P.out_file, ".gz");
 
     std::string out_main    = P.out_file;
+    std::string base        = P.out_file;
+    if (out_is_gz && base.size() > 3) {
+        base.erase(base.size() - 3);  // 去掉 ".gz"
+    }
     std::string out_unmatch = out_is_gz ?
-                                (P.out_file + ".unmatched.gz") :
-                                (P.out_file + ".unmatched");
+                                (base + ".unmatch.gz") :
+                                (P.out_file + ".unmatch");
     
     Writer fout(out_main, P.format);
     Writer funm(out_unmatch, P.format);
@@ -178,7 +185,7 @@ void process_gwas(const Params& P,
     }
     
     // header 
-    if (is_smr){
+    if (is_cojo){
         fout.write_cojo_header();
         funm.write_cojo_header();
     } else {
@@ -208,8 +215,8 @@ void process_gwas(const Params& P,
         }
 
         // 只对 matched 行进行格式化输出
-        if (is_smr) {
-            // ------------- SMR 格式输出 -------------
+        if (is_cojo) {
+            // ------------- COJO 格式输出 -------------
             auto f = split(gwas_lines[i]);
 
             int max_col2 = colFreq;
