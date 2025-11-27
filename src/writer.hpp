@@ -24,7 +24,7 @@ public:
 
     void write_line(const std::string &line);
 
-    void write_smr_header();
+    void write_cojo_header();
 
     bool good() const { return ok_; }
 

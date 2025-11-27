@@ -50,8 +50,8 @@ void Writer::write_line(const std::string &line) {
     }
 }
 
-void Writer::write_smr_header(){
-    if (format_ == "smr") {
-        write_line("SNP\tA1\tA2\tfreq\tbeta\tse\tP\tN");
+void Writer::write_cojo_header(){
+    if (format_ == "cojo") {
+        write_line("SNP\tA1\tA2\tfreq\tb\tse\tp\tN");
     } 
 }

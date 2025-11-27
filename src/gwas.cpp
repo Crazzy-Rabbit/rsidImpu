@@ -179,8 +179,8 @@ void process_gwas(const Params& P,
     
     // header 
     if (is_smr){
-        fout.write_smr_header();
-        funm.write_smr_header();
+        fout.write_cojo_header();
+        funm.write_cojo_header();
     } else {
         std::string header_line;
         for (size_t i=0; i<header.size(); ++i){
